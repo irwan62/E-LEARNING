@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>E-LEARNING KURIKULUM MERDEKA</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1220;color:#edf3ff;font-family:Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+:root{--blue:#438bff;--panel:#151f32;--line:#293750;--muted:#9aaac3;--green:#22c58b}
+header{height:65px;background:#111c30;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 17px;position:sticky;top:0;z-index:5}
+.logo{font-weight:900;font-size:15px;color:#65a7ff;max-width:220px}
+.logo small{display:block;font-size:9px;color:#9aaac3;letter-spacing:2px;margin-top:4px}
+.wrap{max-width:1100px;margin:auto;padding:17px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px;margin-bottom:13px}
+h1,h2,h3,p{margin-top:0}
+h2{font-size:20px}
+h3{font-size:16px}
+.muted{color:var(--muted);font-size:13px;line-height:1.5}
+.btn{background:var(--blue);border:0;color:white;padding:12px 16px;border-radius:10px;font-weight:bold}
+.btn:disabled{opacity:.4}
+.btn.secondary{background:#273751}
+.btn.green{background:#15996d}
+.btn.red{background:#b84151}
+.btn.full{width:100%}
+input,select{width:100%;padding:13px;border:1px solid var(--line);border-radius:10px;background:#0c1729;color:white;margin:6px 0 13px;outline:none}
+label{font-size:12px;color:#b8c8df}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.tile{background:#192740;border:1px solid var(--line);border-radius:13px;padding:15px;cursor:pointer;min-height:90px}
+.tile:active{transform:scale(.98)}
+.tile b{display:block;margin-bottom:7px}
+.tile span{font-size:12px;color:var(--muted)}
+nav{display:flex;gap:7px;overflow-x:auto;padding:10px 0 14px}
+nav button{white-space:nowrap;background:#1a2940;border:1px solid var(--line);color:#c6d5ea;padding:10px 13px;border-radius:9px}
+nav button.active{background:var(--blue);color:white}
+.hidden{display:none!important}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pill{font-size:11px;background:#233957;color:#9dc5ff;border-radius:20px;padding:5px 9px}
+.option{display:block;width:100%;text-align:left;background:#17263c;color:white;border:1px solid var(--line);padding:14px;border-radius:10px;margin:9px 0}
+.option.selected{border:2px solid var(--blue);background:#1c3657}
+.option.correct{border-color:var(--green)}
+.option.wrong{border-color:#e15d70}
+.progress{height:8px;background:#26344a;border-radius:10px;overflow:hidden;margin:12px 0}
+.progress div{height:100%;background:var(--green);width:0}
+.small{font-size:12px;color:var(--muted)}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#263954;padding:13px 18px;border-radius:12px;z-index:20;max-width:90%;display:none;box-shadow:0 5px 25px #0008}
+#auth{max-width:420px;margin:7vh auto;padding:20px}
+#auth .brand{text-align:center;margin-bottom:25px}
+#auth .brand h1{font-size:25px;color:#68aaff}
+#auth .brand p{color:var(--muted);font-size:12px;letter-spacing:2px}
+.question{font-size:17px;line-height:1.6;font-weight:bold}
+.score{font-size:29px;font-weight:900;color:#65adff}
+.badge{padding:5px 8px;background:#253852;border-radius:7px;font-size:11px}
+footer{text-align:center;padding:25px;color:#687d9c;font-size:11px}
+#skillNotice{position:fixed;top:75px;left:50%;transform:translateX(-50%);width:90%;max-width:400px;background:#263b5b;border:1px solid #548de0;padding:14px;border-radius:12px;z-index:15;display:none}
+@media(max-width:500px){.wrap{padding:12px}.card{padding:13px}.logo{font-size:13px}}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="logo">E-LEARNING KURIKULUM MERDEKA<small>LEARN • PRACTICE • COMPETE</small></div>
+ <div id="topUser" class="small">Belum login</div>
+</header>
+
+<div id="auth">
+ <div class="brand">
+  <h1>E-LEARNING</h1>
+  <p>KURIKULUM MERDEKA</p>
+  <div class="muted">Platform pembelajaran dan kompetisi SMA</div>
+ </div>
+ <div class="card">
+  <div class="row">
+   <button class="btn" id="loginTab" onclick="authMode='login';authUI()">LOGIN</button>
+   <button class="btn secondary" id="registerTab" onclick="authMode='register';authUI()">DAFTAR</button>
+  </div>
+  <div id="authFields"></div>
+  <button class="btn full" id="authSubmit" onclick="submitAuth()">LOGIN</button>
+  <p class="small" style="margin-top:15px">Gunakan akun pribadi. Password dikelola oleh Firebase Authentication.</p>
+ </div>
+ <div id="configWarning" class="muted"></div>
+</div>
+
+<div id="app" class="hidden">
+ <main class="wrap">
+  <section id="homePage">
+   <div class="card">
+    <div class="row">
+     <div><div class="muted">SELAMAT DATANG</div><h2 id="welcome">Pelajar!</h2><div class="muted">Terus belajar dan tingkatkan kemampuanmu.</div></div>
+     <div class="score" id="level">1</div>
+    </div>
+    <div class="progress"><div id="xpBar"></div></div>
+    <div class="row small"><span id="xpText">0 XP</span><span id="streak">0 jawaban benar</span></div>
+   </div>
+   <h2>Menu Pembelajaran</h2>
+   <div class="grid">
+    <div class="tile" onclick="showPage('learn')"><b>📚 Tempat Belajar</b><span>Materi dan ringkasan pelajaran</span></div>
+    <div class="tile" onclick="showPage('solo')"><b>✏️ Latihan Mandiri</b><span>Belajar sendiri</span></div>
+    <div class="tile" onclick="showPage('multi')"><b>👥 Multiplayer</b><span>Belajar bersama teman</span></div>
+    <div class="tile" onclick="showPage('competition')"><b>🏆 Kompetisi</b><span>Kompetisi dan perlombaan</span></div>
+    <div class="tile" onclick="showPage('games')"><b>🎮 Mini Games</b><span>Permainan edukatif sendiri</span></div>
+    <div class="tile" onclick="showPage('leaderboard')"><b>🥇 Leaderboard</b><span>Peringkat pemain</span></div>
+   </div>
+   <div class="card" style="margin-top:15px">
+    <h3>Pengaturan akun</h3>
+    <div class="row"><span id="profileName"></span><button class="btn secondary" onclick="logout()">Keluar</button></div>
+   </div>
+  </section>
+
+  <section id="learnPage" class="hidden">
+   <h2>📚 Tempat Belajar</h2>
+   <p class="muted">Pilih mata pelajaran untuk membaca materi sebelum mengerjakan latihan.</p>
+   <div id="learnSubjects" class="grid"></div>
+   <div id="lessonDetail" class="card hidden"></div>
+  </section>
+
+  <section id="soloPage" class="hidden">
+   <h2>✏️ Latihan Mandiri</h2>
+   <div id="soloSetup" class="card">
+    <label>Mata pelajaran</label><select id="soloSubject"></select>
+    <label>Tingkat kesulitan</label>
+    <select id="soloDifficulty"><option>Mudah</option><option selected>Sedang</option><option>Sulit</option><option>Olimpiade</option></select>
+    <label>Jumlah soal</label>
+    <select id="soloCount"><option>5</option><option selected>10</option><option>15</option><option>20</option></select>
+    <button class="btn full" onclick="startSolo()">Mulai latihan</button>
+   </div>
+   <div id="soloQuiz" class="card hidden"></div>
+  </section>
+
+  <section id="multiPage" class="hidden">
+   <h2>👥 Multiplayer</h2>
+   <div class="card">
+    <h3>Buat Room</h3>
+    <label>Nama room</label><input id="roomName" placeholder="Contoh: Kelas X-1">
+    <label>Mata pelajaran</label><select id="roomSubject"></select>
+    <label>Kesulitan</label><select id="roomDifficulty"><option>Mudah</option><option selected>Sedang</option><option>Sulit</option><option>Olimpiade</option></select>
+    <label>Jumlah soal</label><select id="roomCount"><option>5</option><option selected>10</option><option>15</option><option>20</option></select>
+    <label>Kapasitas pemain (maksimal 100)</label><select id="roomCapacity"><option>10</option><option>20</option><option>50</option><option selected>100</option></select>
+    <label>Jenis room</label><select id="roomVisibility"><option value="private">Privat (kode)</option><option value="public">Publik (tanpa kode)</option></select>
+    <label>Mode skill</label><select id="roomSkills"><option value="off">Tanpa skill</option><option value="on">Dengan skill</option></select>
+    <button class="btn full" onclick="createRoom()">Buat room</button>
+   </div>
+   <div class="card">
+    <h3>Gabung Room</h3>
+    <label>Kode room</label><input id="joinCode" placeholder="Masukkan kode room">
+    <button class="btn full" onclick="joinRoom()">Gabung dengan kode</button>
+   </div>
+   <div class="card">
+    <h3>🌐 Room Publik</h3>
+    <div id="publicRooms" class="muted">Memuat room publik...</div>
+   </div>
+  </section>
+
+  <section id="roomPage" class="hidden">
+   <div class="card">
+    <div class="row"><h2 id="roomTitle">Room</h2><span class="pill" id="roomCodeLabel"></span></div>
+    <p class="muted" id="roomInfo"></p>
+    <div class="row"><b>Daftar pemain</b><span id="playerCount" class="badge"></span></div>
+    <div id="players"></div>
+    <div id="hostControls" class="hidden">
+     <hr style="border-color:var(--line)">
+     <h3>Musyawarah memulai permainan</h3>
+     <p class="muted">Permainan dimulai jika lebih dari 50% pemain menyetujui. Minimal 2 pemain.</p>
+     <div id="voteStatus"></div>
+     <button class="btn green full" onclick="voteStart()">SETUJU MULAI</button>
+     <button class="btn secondary full" style="margin-top:8px" onclick="startRoom()">MULAI JIKA MAYORITAS SETUJU</button>
+    </div>
+    <div id="guestControls">
+     <button class="btn green full" onclick="voteStart()">SETUJU MULAI</button>
+    </div>
+    <button class="btn red full" style="margin-top:10px" onclick="leaveRoom()">Keluar room</button>
+   </div>
+   <div id="multiQuiz" class="card hidden"></div>
+   <div id="skillPanel" class="card hidden">
+    <h3>⚡ Skill</h3><p class="muted">Pilih skill yang ingin digunakan. Penggunaan skill terbatas.</p>
+    <div class="grid">
+     <button class="btn secondary" onclick="useSkill('hint')">💡 Hint</button>
+     <button class="btn secondary" onclick="useSkill('fifty')">50:50</button>
+     <button class="btn secondary" onclick="useSkill('double')">×2 Poin</button>
+     <button class="btn secondary" onclick="useSkill('freeze')">❄️ Freeze</button>
+     <button class="btn secondary" onclick="useSkill('shield')">🛡 Shield</button>
+    </div>
+    <p class="small" id="skillStatus"></p>
+   </div>
+   <div id="roomResults" class="card hidden"></div>
+  </section>
+
+  <section id="competitionPage" class="hidden">
+   <h2>🏆 Kompetisi</h2>
+   <div class="card">
+    <h3>Kompetisi Cepat</h3>
+    <p class="muted">Buat room kompetisi atau masuk room publik. Minimal dua peserta untuk memulai perlombaan.</p>
+    <button class="btn full" onclick="showPage('multi')">Cari atau buat kompetisi</button>
+   </div>
+   <div class="card"><h3>Aturan penilaian</h3><p class="muted">Peringkat berdasarkan jumlah jawaban benar. Jika seri, waktu penyelesaian menjadi penentu berikutnya.</p></div>
+  </section>
+
+  <section id="gamesPage" class="hidden">
+   <h2>🎮 Mini Games</h2>
+   <div class="card">
+    <h3>Memory Match</h3><p class="muted">Temukan pasangan kartu yang sama. Mini game ini dimainkan sendiri.</p>
+    <button class="btn" onclick="startMemory()">Mulai Memory Match</button>
+    <div id="memoryGame" class="grid" style="margin-top:15px"></div>
+   </div>
+   <div class="card">
+    <h3>Math Sprint</h3><p class="muted">Latihan hitung cepat melawan waktu.</p>
+    <button class="btn" onclick="startMathGame()">Mulai Math Sprint</button>
+    <div id="mathGame" style="margin-top:15px"></div>
+   </div>
+  </section>
+
+  <section id="leaderboardPage" class="hidden">
+   <h2>🥇 Leaderboard</h2>
+   <div class="card"><div id="leaderboard">Belum ada data peringkat.</div></div>
+  </section>
+ </main>
+</div>
+<div id="skillNotice"></div>
+<div id="toast"></div>
+<footer>E-LEARNING KURIKULUM MERDEKA • Platform pembelajaran SMA</footer>
+
+<script>
+// ==========================================
+// 1. KONFIGURASI FIREBASE
+// GANTI BAGIAN INI DENGAN CONFIG FIREBASE LAMA
+// ==========================================
+const firebaseConfig = {
+ apiKey: "AIzaSyAmTHXlbiTpY-keayxDgKMGFDcu6Yef1Sc",
+ authDomain: "e-learning-kurikulum-merdeka.firebaseapp.com",
+ databaseURL: "https://e-learning-kurikulum-merdeka-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId: "e-learning-kurikulum-merdeka",
+ storageBucket: "e-learning-kurikulum-merdeka.firebasestorage.app",
+ messagingSenderId: "513306540177",
+ appId: "1:513306540177:web:6a890fd9dc81ba25e7e730"
+};
+
+let auth=null,db=null,user=null,profile=null;
+let authMode="login",currentRoom=null,roomRef=null,roomListener=null;
+let soloQuestions=[],soloIndex=0,soloScore=0,soloSelected=null;
+let multiListener=null,usedSkills={},doubleNext=false,shield=false;
+let memoryCards=[],memoryOpen=[],memoryMatches=0;
+let mathAnswer=0,mathTimer=null;
+
+const subjects=[
+"Matematika","Bahasa Indonesia","Bahasa Inggris","Bahasa Sunda","Bahasa Jawa","Bahasa Jepang",
+"PPKn","Coding","Informatika","Seni Budaya (SBK)","Pendidikan Agama Islam",
+"Pendidikan Agama Kristen","Pendidikan Agama Katolik","Pendidikan Agama Protestan",
+"Kimia","Biologi","Fisika","Ekonomi","Sejarah","Geografi","Sosiologi"
+];
+
+const lessons={
+"Matematika":"Bilangan berpangkat, persamaan dan pertidaksamaan, fungsi, trigonometri dasar, statistika, peluang, serta penalaran matematis.",
+"Bahasa Indonesia":"Teks laporan hasil observasi, teks anekdot, hikayat, negosiasi, eksposisi, dan keterampilan memahami informasi.",
+"Bahasa Inggris":"Descriptive text, recount text, narrative text, procedure text, expressions, grammar, dan vocabulary.",
+"Bahasa Sunda":"Undak-usuk basa, sisindiran, dongeng, aksara Sunda, dan pemahaman teks budaya Sunda.",
+"Bahasa Jawa":"Unggah-ungguh basa, aksara Jawa, tembang, cerita rakyat, dan teks budaya Jawa.",
+"Bahasa Jepang":"Hiragana, katakana, kosakata dasar, aisatsu, perkenalan, angka, dan pola kalimat sederhana.",
+"PPKn":"Pancasila, konstitusi, norma, hak dan kewajiban warga negara, serta Bhinneka Tunggal Ika.",
+"Coding":"Algoritma, flowchart, variabel, tipe data, percabangan, perulangan, fungsi, dan debugging.",
+"Informatika":"Berpikir komputasional, sistem komputer, jaringan, data, keamanan digital, dan dampak informatika.",
+"Seni Budaya (SBK)":"Seni rupa, musik, tari, teater, apresiasi, dan kebudayaan Indonesia.",
+"Pendidikan Agama Islam":"Al-Qur'an dan hadis, akidah, akhlak, fikih, sejarah peradaban Islam, dan penerapan nilai Islam.",
+"Pendidikan Agama Kristen":"Alkitab, iman, kasih, kehidupan Yesus, gereja, dan penerapan nilai Kristiani.",
+"Pendidikan Agama Katolik":"Kitab Suci, iman Katolik, sakramen, gereja, moral, dan kehidupan Yesus.",
+"Pendidikan Agama Protestan":"Alkitab, iman, kasih, pelayanan, gereja, dan kehidupan Kristiani.",
+"Kimia":"Struktur atom, tabel periodik, ikatan kimia, stoikiometri dasar, dan reaksi kimia.",
+"Biologi":"Keanekaragaman hayati, virus, bakteri, ekosistem, sel, dan klasifikasi makhluk hidup.",
+"Fisika":"Pengukuran, besaran dan satuan, vektor, gerak, energi, dan metode ilmiah.",
+"Ekonomi":"Kelangkaan, kebutuhan, biaya peluang, sistem ekonomi, pasar, dan kegiatan ekonomi.",
+"Sejarah":"Konsep dasar sejarah, kronologi, sumber sejarah, kerajaan, dan perkembangan peradaban.",
+"Geografi":"Konsep geografi, peta, penginderaan jauh, lingkungan, dan dinamika geosfer.",
+"Sosiologi":"Interaksi sosial, identitas, kelompok sosial, lembaga sosial, dan metode penelitian."
+};
+
+// Bank soal awal. Tambahkan soal melalui objek BANK.
+// Setiap soal wajib memiliki tepat satu jawaban benar.
+const BANK=[
+{subject:"Matematika",difficulty:"Mudah",q:"Jika 3x + 7 = 22, nilai x adalah ...",a:["3","4","5","6"],correct:2,ex:"3x = 15, sehingga x = 5."},
+{subject:"Matematika",difficulty:"Sedang",q:"Diketahui f(x)=2x²−5x+3. Nilai f(2)+f(−1) adalah ...",a:["10","11","12","13"],correct:1,ex:"f(2)=1 dan f(−1)=10. Jumlahnya 11."},
+{subject:"Matematika",difficulty:"Sulit",q:"Akar-akar persamaan x²−7x+12=0 adalah ...",a:["2 dan 6","3 dan 4","−3 dan −4","1 dan 12"],correct:1,ex:"Faktorkan menjadi (x−3)(x−4)=0."},
+{subject:"Bahasa Indonesia",difficulty:"Mudah",q:"Tujuan utama teks laporan hasil observasi adalah ...",a:["Menceritakan pengalaman pribadi","Menyampaikan informasi faktual berdasarkan pengamatan","Membujuk pembaca membeli produk","Menghibur melalui konflik tokoh"],correct:1,ex:"Teks laporan observasi menyajikan fakta hasil pengamatan secara objektif."},
+{subject:"Bahasa Indonesia",difficulty:"Sedang",q:"Kalimat yang paling objektif untuk laporan observasi adalah ...",a:["Bunga itu sangat cantik dan luar biasa","Menurut saya, pohon itu paling menarik","Daun mangga berbentuk memanjang dengan tulang menyirip","Pohon itu sepertinya sangat bahagia"],correct:2,ex:"Pernyataan tersebut dapat diamati dan diverifikasi."},
+{subject:"Bahasa Inggris",difficulty:"Mudah",q:"Choose the grammatically correct sentence.",a:["She go to school every day","She goes to school every day","She going to school every day","She gone to school every day"],correct:1,ex:"Subject she menggunakan verb dengan akhiran -s pada simple present."},
+{subject:"Bahasa Inggris",difficulty:"Sedang",q:"The main purpose of a descriptive text is to ...",a:["Retell a past experience","Describe a particular person, place, or thing","Explain steps to make something","Argue against an opinion"],correct:1,ex:"Descriptive text menggambarkan objek tertentu secara rinci."},
+{subject:"Bahasa Sunda",difficulty:"Mudah",q:"Kecap 'abdi' dina basa Sunda kaasup kecap ...",a:["Loma","Kasar","Lemes","Pananya"],correct:2,ex:"Abdi merupakan kata ganti orang pertama dalam ragam bahasa lemes."},
+{subject:"Bahasa Jawa",difficulty:"Mudah",q:"Tembung 'kula' ing basa Jawa digunakake kanggo ...",a:["Nyebut awak dhewe kanthi sopan","Nyebut kewan","Nyebut papan","Nyebut wektu"],correct:0,ex:"Kula adalah kata ganti orang pertama dalam ragam krama."},
+{subject:"Bahasa Jepang",difficulty:"Mudah",q:"Apa arti dari 'Ohayou gozaimasu'?",a:["Selamat malam","Selamat pagi","Terima kasih","Sampai jumpa"],correct:1,ex:"Ohayou gozaimasu merupakan salam selamat pagi."},
+{subject:"PPKn",difficulty:"Mudah",q:"Pancasila berkedudukan sebagai ...",a:["Peraturan daerah","Dasar negara Indonesia","Organisasi internasional","Hukum adat tunggal"],correct:1,ex:"Pancasila merupakan dasar negara dan ideologi bangsa Indonesia."},
+{subject:"Coding",difficulty:"Sedang",q:"Apa keluaran kode Python: x=4; print(x*2+3)?",a:["11","14","8","10"],correct:0,ex:"Perkalian dilakukan lebih dahulu: 4×2+3=11."},
+{subject:"Informatika",difficulty:"Sedang",q:"Dalam berpikir komputasional, memecah masalah besar menjadi bagian kecil disebut ...",a:["Abstraksi","Dekomposisi","Simulasi","Enkripsi"],correct:1,ex:"Dekomposisi membagi masalah kompleks menjadi submasalah."},
+{subject:"Seni Budaya (SBK)",difficulty:"Mudah",q:"Unsur seni rupa yang terbentuk dari rangkaian titik adalah ...",a:["Warna","Tekstur","Garis","Ruang"],correct:2,ex:"Garis merupakan unsur rupa yang terbentuk dari rangkaian titik."},
+{subject:"Pendidikan Agama Islam",difficulty:"Mudah",q:"Sikap jujur dalam Islam dikenal dengan istilah ...",a:["Amanah","Shiddiq","Tabligh","Fathanah"],correct:1,ex:"Shiddiq berarti benar atau jujur."},
+{subject:"Pendidikan Agama Kristen",difficulty:"Mudah",q:"Dalam ajaran Kristen, hukum kasih menekankan kasih kepada ...",a:["Diri sendiri saja","Allah dan sesama","Orang yang dikenal saja","Kelompok tertentu saja"],correct:1,ex:"Hukum kasih menekankan kasih kepada Allah dan sesama manusia."},
+{subject:"Pendidikan Agama Katolik",difficulty:"Mudah",q:"Kitab utama yang menjadi sumber iman umat Katolik adalah ...",a:["Tripitaka","Alkitab","Weda","Tao Te Ching"],correct:1,ex:"Alkitab merupakan Kitab Suci umat Katolik."},
+{subject:"Pendidikan Agama Protestan",difficulty:"Mudah",q:"Perintah untuk mengasihi sesama mengajarkan nilai ...",a:["Kesombongan","Kepedulian dan kasih","Persaingan tanpa batas","Mementingkan diri sendiri"],correct:1,ex:"Kasih kepada sesama menjadi nilai utama dalam ajaran Kristen."},
+{subject:"Kimia",difficulty:"Mudah",q:"Nomor atom suatu unsur menunjukkan jumlah ...",a:["Neutron saja","Proton dalam inti atom","Proton dan neutron","Elektron valensi saja"],correct:1,ex:"Nomor atom adalah jumlah proton dalam inti."},
+{subject:"Kimia",difficulty:"Sedang",q:"Atom netral dengan nomor atom 17 memiliki jumlah elektron ...",a:["7","17","18","34"],correct:1,ex:"Pada atom netral, jumlah elektron sama dengan jumlah proton."},
+{subject:"Biologi",difficulty:"Mudah",q:"Organel yang menjadi tempat utama respirasi sel adalah ...",a:["Ribosom","Mitokondria","Lisosom","Badan Golgi"],correct:1,ex:"Mitokondria menghasilkan sebagian besar ATP melalui respirasi aerob."},
+{subject:"Biologi",difficulty:"Sedang",q:"Hubungan antara lebah dan bunga dalam penyerbukan merupakan contoh ...",a:["Parasitisme","Komensalisme","Mutualisme","Amensalisme"],correct:2,ex:"Lebah memperoleh nektar dan bunga terbantu proses penyerbukannya."},
+{subject:"Fisika",difficulty:"Mudah",q:"Satuan SI untuk kecepatan adalah ...",a:["m/s","kg/m","Newton","Joule"],correct:0,ex:"Kecepatan merupakan perpindahan per satuan waktu, satuannya m/s."},
+{subject:"Fisika",difficulty:"Sedang",q:"Benda bergerak dengan kecepatan 20 m/s selama 5 sekon. Jaraknya adalah ...",a:["4 m","25 m","100 m","200 m"],correct:2,ex:"s=v×t=20×5=100 meter."},
+{subject:"Ekonomi",difficulty:"Mudah",q:"Kondisi ketika kebutuhan manusia tidak terbatas sedangkan sumber daya terbatas disebut ...",a:["Distribusi","Kelangkaan","Konsumsi","Produksi"],correct:1,ex:"Kelangkaan terjadi karena keterbatasan sumber daya dibandingkan kebutuhan."},
+{subject:"Ekonomi",difficulty:"Sedang",q:"Biaya peluang adalah ...",a:["Semua biaya yang telah dibayar","Nilai alternatif terbaik yang dikorbankan","Harga barang setelah diskon","Jumlah keuntungan perusahaan"],correct:1,ex:"Biaya peluang adalah nilai alternatif terbaik yang dilepas ketika memilih."},
+{subject:"Sejarah",difficulty:"Mudah",q:"Urutan peristiwa berdasarkan waktu disebut ...",a:["Kronologi","Interpretasi","Historiografi","Periodisasi"],correct:0,ex:"Kronologi menyusun peristiwa menurut urutan waktu."},
+{subject:"Geografi",difficulty:"Mudah",q:"Ilmu yang mempelajari persamaan dan perbedaan fenomena geosfer adalah ...",a:["Sosiologi","Geografi","Ekonomi","Antropologi"],correct:1,ex:"Geografi mempelajari fenomena geosfer dalam perspektif keruangan."},
+{subject:"Sosiologi",difficulty:"Mudah",q:"Syarat utama terjadinya interaksi sosial adalah ...",a:["Kontak sosial dan komunikasi","Kesamaan usia","Kesamaan pekerjaan","Adanya persaingan"],correct:0,ex:"Interaksi sosial memerlukan kontak sosial dan komunikasi."}
+];
+
+function initFirebase(){
+ try{
+  if(firebaseConfig.apiKey==="MASUKKAN_API_KEY"){
+   document.getElementById("configWarning").innerHTML="Firebase belum dikonfigurasi. Masukkan Firebase Config terlebih dahulu pada bagian kode.";
+   return;
+  }
+  firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth();db=firebase.database();
+  auth.onAuthStateChanged(async u=>{
+   user=u;
+   if(u){
+    let snap=await db.ref("quiz_smagri/profiles/"+u.uid).once("value");
+    profile=snap.val();
+    if(!profile){
+     const name=u.displayName||u.email.split("@")[0];
+     profile={name,createdAt:Date.now(),xp:0,correct:0};
+     await db.ref("quiz_smagri/profiles/"+u.uid).set(profile);
+    }
+    openApp();
+   }else{
+    document.getElementById("auth").classList.remove("hidden");
+    document.getElementById("app").classList.add("hidden");
+   }
+  });
+ }catch(e){toast("Firebase error: "+e.message)}
+}
+function authUI(){
+ document.getElementById("authFields").innerHTML=
+ (authMode==="register"?'<label>Nama pemain</label><input id="authName" placeholder="Nama yang tampil di game">':'')+
+ '<label>Email</label><input id="authEmail" type="email" placeholder="Email">'+
+ '<label>Password</label><input id="authPassword" type="password" placeholder="Minimal 6 karakter">';
+ document.getElementById("authSubmit").textContent=authMode==="login"?"LOGIN":"BUAT AKUN";
+ document.getElementById("loginTab").className=authMode==="login"?"btn":"btn secondary";
+ document.getElementById("registerTab").className=authMode==="register"?"btn":"btn secondary";
+}
+async function submitAuth(){
+ if(!auth){toast("Firebase belum dikonfigurasi.");return}
+ const email=document.getElementById("authEmail").value.trim();
+ const password=document.getElementById("authPassword").value;
+ try{
+  if(authMode==="register"){
+   const name=document.getElementById("authName").value.trim();
+   if(!name)return toast("Masukkan nama pemain.");
+   if(password.length<6)return toast("Password minimal 6 karakter.");
+   let cred=await auth.createUserWithEmailAndPassword(email,password);
+   await cred.user.updateProfile({displayName:name});
+   await db.ref("quiz_smagri/profiles/"+cred.user.uid).set({name,createdAt:Date.now(),xp:0,correct:0});
+  }else await auth.signInWithEmailAndPassword(email,password);
+ }catch(e){toast(e.message)}
+}
+async function logout(){if(auth)await auth.signOut()}
+function openApp(){
+ document.getElementById("auth").classList.add("hidden");
+ document.getElementById("app").classList.remove("hidden");
+ document.getElementById("topUser").textContent=profile.name;
+ document.getElementById("welcome").textContent="Halo, "+profile.name+"!";
+ document.getElementById("profileName").textContent=profile.name;
+ updateStats();fillSubjects();showPage("home");
+ listenPublicRooms();listenLeaderboard();
+}
+function updateStats(){
+ let xp=profile?.xp||0,level=Math.floor(xp/100)+1;
+ document.getElementById("level").textContent="LV "+level;
+ document.getElementById("xpBar").style.width=(xp%100)+"%";
+ document.getElementById("xpText").textContent=xp+" XP";
+ document.getElementById("streak").textContent=(profile?.correct||0)+" jawaban benar";
+}
+function showPage(page){
+ ["home","learn","solo","multi","room","competition","games","leaderboard"].forEach(p=>{
+  document.getElementById(p+"Page").classList.toggle("hidden",p!==page);
+ });
+}
+function fillSubjects(){
+ ["soloSubject","roomSubject"].forEach(id=>{
+  document.getElementById(id).innerHTML=subjects.map(s=>`<option>${s}</option>`).join("");
+ });
+ document.getElementById("learnSubjects").innerHTML=subjects.map((s,i)=>
+ `<div class="tile" onclick="openLesson(${i})"><b>${s}</b><span>Materi kelas 10 SMA</span></div>`).join("");
+}
+function openLesson(i){
+ let s=subjects[i],el=document.getElementById("lessonDetail");
+ el.classList.remove("hidden");
+ el.innerHTML=`<button class="btn secondary" onclick="document.getElementById('lessonDetail').classList.add('hidden')">← Kembali</button><h2 style="margin-top:15px">${s}</h2><span class="pill">Kelas X • Kurikulum Merdeka</span><h3 style="margin-top:20px">Ringkasan Materi</h3><p style="line-height:1.8">${lessons[s]}</p><h3>Tujuan Pembelajaran</h3><p class="muted">Memahami konsep dasar, mengidentifikasi informasi penting, menerapkan pengetahuan, dan menyelesaikan permasalahan sesuai materi.</p><h3>Tips Belajar</h3><p class="muted">Baca konsep, catat istilah penting, kerjakan contoh soal, lalu evaluasi jawaban yang keliru.</p><button class="btn full" onclick="showPage('solo');document.getElementById('soloSubject').value=${JSON.stringify(s)}">Mulai latihan materi ini</button>`;
+ el.scrollIntoView({behavior:"smooth"});
+}
+function getQuestions(subject,difficulty,count){
+ let arr=BANK.filter(q=>q.subject===subject&&(q.difficulty===difficulty||difficulty==="Olimpiade"));
+ if(!arr.length)arr=BANK.filter(q=>q.subject===subject);
+ if(!arr.length)arr=BANK.filter(q=>q.subject==="Matematika");
+ return shuffle([...arr]).slice(0,Math.min(count,arr.length));
+}
+function shuffle(a){return a.sort(()=>Math.random()-.5)}
+function startSolo(){
+ soloQuestions=getQuestions(document.getElementById("soloSubject").value,document.getElementById("soloDifficulty").value,+document.getElementById("soloCount").value);
+ if(!soloQuestions.length)return toast("Soal belum tersedia.");
+ soloIndex=0;soloScore=0;soloSelected=null;
+ document.getElementById("soloSetup").classList.add("hidden");
+ document.getElementById("soloQuiz").classList.remove("hidden");
+ renderSolo();
+}
+function renderSolo(){
+ if(soloIndex>=soloQuestions.length){
+  document.getElementById("soloQuiz").innerHTML=`<h2>Latihan selesai!</h2><div class="score">${soloScore}/${soloQuestions.length}</div><p>Jawaban benar</p><button class="btn full" onclick="finishSolo()">Simpan hasil dan kembali</button>`;
+  return;
+ }
+ let q=soloQuestions[soloIndex];
+ document.getElementById("soloQuiz").innerHTML=`<div class="row"><span class="pill">Soal ${soloIndex+1}/${soloQuestions.length}</span><span class="pill">${q.difficulty}</span></div><div class="progress"><div style="width:${soloIndex/soloQuestions.length*100}%"></div></div><p class="question">${q.q}</p>${q.a.map((a,i)=>`<button class="option" onclick="answerSolo(${i})">${"ABCD"[i]}. ${a}</button>`).join("")}<div id="soloFeedback"></div>`;
+}
+function answerSolo(i){
+ let q=soloQuestions[soloIndex],buttons=document.querySelectorAll("#soloQuiz .option");
+ buttons.forEach((b,j)=>{b.disabled=true;if(j===q.correct)b.classList.add("correct");if(j===i&&i!==q.correct)b.classList.add("wrong")});
+ if(i===q.correct)soloScore++;
+ document.getElementById("soloFeedback").innerHTML=`<div class="card"><b>${i===q.correct?"Benar!":"Belum tepat."}</b><p class="muted">${q.ex}</p><button class="btn full" onclick="soloIndex++;renderSolo()">Soal berikutnya</button></div>`;
+}
+async function finishSolo(){
+ let gained=soloScore*10;
+ profile.xp=(profile.xp||0)+gained;profile.correct=(profile.correct||0)+soloScore;
+ await db.ref("quiz_smagri/profiles/"+user.uid).update({xp:profile.xp,correct:profile.correct,name:profile.name});
+ updateStats();document.getElementById("soloSetup").classList.remove("hidden");document.getElementById("soloQuiz").classList.add("hidden");showPage("home");
+ toast("Hasil tersimpan: +"+gained+" XP");
+}
+
+// ==========================================
+// MULTIPLAYER ROOM
+// ==========================================
+function makeCode(){return Math.random().toString(36).substring(2,8).toUpperCase()}
+async function createRoom(){
+ if(!db)return toast("Firebase belum siap.");
+ const code=makeCode(),visibility=document.getElementById("roomVisibility").value;
+ const room={
+  name:document.getElementById("roomName").value.trim()||"Room "+code,
+  code,host:user.uid,visibility,
+  subject:document.getElementById("roomSubject").value,
+  difficulty:document.getElementById("roomDifficulty").value,
+  count:+document.getElementById("roomCount").value,
+  capacity:+document.getElementById("roomCapacity").value,
+  skills:document.getElementById("roomSkills").value,
+  status:"lobby",createdAt:Date.now(),votes:{},
+  players:{[user.uid]:{name:profile.name,joinedAt:Date.now(),score:0,correct:0,answers:{},skills:{},online:true}}
+ };
+ try{
+  await db.ref("quiz_smagri/rooms/"+code).set(room);
+  if(visibility==="public")await db.ref("quiz_smagri/publicRooms/"+code).set({name:room.name,subject:room.subject,host:profile.name,createdAt:room.createdAt});
+  enterRoom(code);
+ }catch(e){toast(e.message)}
+}
+async function joinRoom(){
+ let code=document.getElementById("joinCode").value.trim().toUpperCase();
+ if(!code)return toast("Masukkan kode room.");
+ await joinCode(code);
+}
+async function joinCode(code){
+ try{
+  let ref=db.ref("quiz_smagri/rooms/"+code),snap=await ref.once("value"),r=snap.val();
+  if(!r)return toast("Room tidak ditemukan.");
+  if(r.status!=="lobby")return toast("Permainan sudah dimulai.");
+  let players=r.players||{};
+  if(!players[user.uid]&&Object.keys(players).length>=r.capacity)return toast("Room penuh.");
+  await ref.child("players/"+user.uid).update({name:profile.name,joinedAt:Date.now(),score:0,correct:0,answers:{},skills:{},online:true});
+  enterRoom(code);
+ }catch(e){toast(e.message)}
+}
+function enterRoom(code){
+ currentRoom=code;
+ if(roomListener)roomListener.off();
+ roomRef=db.ref("quiz_smagri/rooms/"+code);
+ roomListener=roomRef;
+ roomListener.on("value",snap=>{
+  const r=snap.val();if(!r)return;
+  renderRoom(r);
+  if(r.status==="playing")renderMultiQuestion(r);
+  if(r.status==="finished")renderResults(r);
+ });
+ roomRef.child("players/"+user.uid+"/online").onDisconnect().set(false);
+ showPage("room");
+}
+function renderRoom(r){
+ document.getElementById("roomTitle").textContent=r.name;
+ document.getElementById("roomCodeLabel").textContent=r.code;
+ document.getElementById("roomInfo").textContent=r.subject+" • "+r.difficulty+" • "+r.count+" soal • "+(r.skills==="on"?"Skill aktif":"Tanpa skill");
+ let ps=Object.entries(r.players||{});
+ document.getElementById("playerCount").textContent=ps.length+"/"+r.capacity;
+ document.getElementById("players").innerHTML=ps.map(([id,p])=>`<div class="row card" style="padding:10px;margin:7px 0"><span>${p.name} ${id===r.host?"👑":""}</span><span class="badge">${p.online===false?"Offline":"Online"} • ${p.correct||0} benar</span></div>`).join("");
+ let isHost=user.uid===r.host;
+ document.getElementById("hostControls").classList.toggle("hidden",!isHost);
+ document.getElementById("guestControls").classList.toggle("hidden",isHost);
+ let votes=Object.keys(r.votes||{}).length,total=ps.length;
+ document.getElementById("voteStatus").textContent=`${votes} dari ${total} pemain menyetujui.`;
+ document.getElementById("skillPanel").classList.toggle("hidden",r.status!=="playing"||r.skills!=="on");
+ document.getElementById("multiQuiz").classList.toggle("hidden",r.status!=="playing");
+}
+async function voteStart(){
+ if(!currentRoom)return;
+ await roomRef.child("votes/"+user.uid).set(true);
+ toast("Persetujuan berhasil dikirim.");
+}
+async function startRoom(){
+ let snap=await roomRef.once("value"),r=snap.val();
+ if(user.uid!==r.host)return toast("Hanya host yang dapat memulai.");
+ let n=Object.keys(r.players||{}).length,v=Object.keys(r.votes||{}).length;
+ if(n<2)return toast("Minimal 2 pemain.");
+ if(v/n<=.5)return toast("Belum mendapat persetujuan mayoritas.");
+ let qs=getQuestions(r.subject,r.difficulty,r.count);
+ if(qs.length<1)return toast("Soal belum tersedia.");
+ // Urutan soal dan kunci jawaban dikirim ke klien untuk prototipe.
+ // Produksi kompetitif memerlukan validasi jawaban di server.
+ await roomRef.update({status:"playing",startedAt:Date.now(),questionIndex:0,questions:qs.map(q=>({...q,correct:q.correct})),players:r.players});
+}
+function renderMultiQuestion(r){
+ const q=r.questions?.[r.questionIndex];
+ if(!q)return;
+ let p=r.players?.[user.uid]||{},answered=p.answers?.[r.questionIndex]!==undefined;
+ let html=`<div class="row"><span class="pill">Soal ${r.questionIndex+1}/${r.questions.length}</span><span class="pill">${r.subject}</span></div><p class="question" style="margin-top:18px">${q.q}</p>`;
+ html+=q.a.map((a,i)=>`<button class="option" ${answered?"disabled":""} onclick="answerMulti(${i})">${"ABCD"[i]}. ${a}</button>`).join("");
+ html+=`<p class="muted">${answered?"Jawaban sudah dikirim. Menunggu soal berikutnya.":"Pilih satu jawaban."}</p>`;
+ document.getElementById("multiQuiz").innerHTML=html;
+}
+async function answerMulti(i){
+ let snap=await roomRef.once("value"),r=snap.val(),idx=r.questionIndex,q=r.questions[idx],p=r.players[user.uid];
+ if(Date.now()<(p.frozenUntil||0))return toast("Kamu sedang terkena Freeze.");
+ if(p.answers&&p.answers[idx]!==undefined)return;
+ let correct=i===q.correct,points=correct?(doubleNext?20:10):0;
+ doubleNext=false;
+ let updates={};
+ updates["players/"+user.uid+"/answers/"+idx]=i;
+ updates["players/"+user.uid+"/lastAnswerAt"]=Date.now();
+ if(correct){
+  updates["players/"+user.uid+"/correct"]=(p.correct||0)+1;
+  updates["players/"+user.uid+"/score"]=(p.score||0)+points;
+ }
+ await roomRef.update(updates);
+ if(correct)toast("Jawaban benar!");
+}
+async function useSkill(type){
+ let snap=await roomRef.once("value"),r=snap.val(),p=r.players[user.uid];
+ if(r.skills!=="on")return;
+ usedSkills[type]=usedSkills[type]||0;
+ if(usedSkills[type]>=2)return toast("Batas skill ini sudah tercapai.");
+ usedSkills[type]++;
+ if(type==="hint"){
+  let q=r.questions[r.questionIndex];
+  toast("Petunjuk: "+q.ex);
+ }
+ if(type==="fifty"){
+  let q=r.questions[r.questionIndex];
+  let wrong=q.a.map((_,i)=>i).filter(i=>i!==q.correct).slice(0,2);
+  toast("50:50: pilihan "+wrong.map(i=>"ABCD"[i]).join(" dan ")+" dieliminasi. (Lihat petunjuk lokal.)");
+  document.querySelectorAll("#multiQuiz .option").forEach((b,i)=>{if(wrong.includes(i))b.style.opacity=".2"});
+ }
+ if(type==="double"){doubleNext=true;toast("Double Point aktif untuk jawaban benar berikutnya.");}
+ if(type==="shield"){shield=true;toast("Shield aktif untuk satu serangan Freeze.");}
+ if(type==="freeze"){
+  let targets=Object.keys(r.players).filter(id=>id!==user.uid);
+  if(!targets.length)return toast("Tidak ada target.");
+  let target=targets[Math.floor(Math.random()*targets.length)];
+  let victim=r.players[target];
+  if(shield){
+   await roomRef.child("players/"+target+"/shieldHit").set(true);
+   toast("Target terlindungi.");
+   return;
+  }
+  await roomRef.child("players/"+target+"/frozenUntil").set(Date.now()+10000);
+  // Pesan tidak mengungkap identitas penyerang.
+  await db.ref("quiz_smagri/privateNotifications/"+target).push({text:"Seseorang telah menggunakan Freeze kepada Anda. Anda tidak dapat menjawab selama 10 detik.",createdAt:Date.now(),type:"freeze"});
+  toast("Freeze berhasil digunakan.");
+ }
+ document.getElementById("skillStatus").textContent="Penggunaan skill "+type+": "+usedSkills[type]+"/2";
+}
+let notifRef=null;
+function listenNotifications(){
+ if(!user||!db)return;
+ notifRef=db.ref("quiz_smagri/privateNotifications/"+user.uid);
+ notifRef.limitToLast(1).on("child_added",snap=>{
+  let n=snap.val();if(Date.now()-n.createdAt<30000)showSkillNotice(n.text);
+ });
+}
+function showSkillNotice(t){
+ let el=document.getElementById("skillNotice");el.textContent="❄️ "+t;el.style.display="block";
+ setTimeout(()=>el.style.display="none",5000);
+}
+async function renderResults(r){
+ document.getElementById("multiQuiz").classList.add("hidden");
+ document.getElementById("skillPanel").classList.add("hidden");
+ let list=Object.values(r.players||{}).sort((a,b)=>(b.correct||0)-(a.correct||0)||(a.lastAnswerAt||Infinity)-(b.lastAnswerAt||Infinity));
+ document.getElementById("roomResults").classList.remove("hidden");
+ document.getElementById("roomResults").innerHTML="<h2>🏆 Hasil Kompetisi</h2>"+list.map((p,i)=>`<div class="row card"><b>${i+1}. ${p.name}</b><span>${p.correct||0} benar • ${p.score||0} poin</span></div>`).join("")+`<button class="btn full" onclick="leaveRoom()">Kembali</button>`;
+}
+async function leaveRoom(){
+ if(roomRef){roomRef.child("players/"+user.uid+"/online").set(false);roomRef.off();}
+ if(currentRoom){let s=await db.ref("quiz_smagri/rooms/"+currentRoom).once("value");if(s.val()?.visibility==="public"){}}
+ currentRoom=null;roomRef=null;showPage("multi");
+}
+function listenPublicRooms(){
+ if(!db)return;
+ db.ref("quiz_smagri/publicRooms").limitToLast(30).on("value",snap=>{
+  let rooms=snap.val()||{},el=document.getElementById("publicRooms");
+  let entries=Object.entries(rooms).reverse();
+  el.innerHTML=entries.length?entries.map(([code,r])=>`<div class="card"><b>${r.name}</b><p class="small">${r.subject} • Host ${r.host}</p><button class="btn" onclick="joinCode('${code}')">Gabung</button></div>`).join(""):"Belum ada room publik.";
+ });
+}
+function listenLeaderboard(){
+ if(!db)return;
+ db.ref("quiz_smagri/profiles").orderByChild("xp").limitToLast(30).on("value",snap=>{
+  let a=[];snap.forEach(s=>a.push(s.val()));a.sort((x,y)=>(y.xp||0)-(x.xp||0));
+  document.getElementById("leaderboard").innerHTML=a.map((p,i)=>`<div class="row card"><b>${i+1}. ${p.name}</b><span>${p.xp||0} XP</span></div>`).join("")||"Belum ada data.";
+ });
+}
+
+// ==========================================
+// MINI GAMES - SOLO
+// ==========================================
+function startMemory(){
+ let values=shuffle(["A","B","C","D","E","F","A","B","C","D","E","F"]);
+ memoryCards=values;memoryOpen=[];memoryMatches=0;
+ drawMemory();
+}
+function drawMemory(){
+ document.getElementById("memoryGame").innerHTML=memoryCards.map((v,i)=>`<button class="btn secondary" style="height:65px;font-size:20px" onclick="flipMemory(${i})">${memoryMatches.includes(i)||memoryOpen.includes(i)?v:"?"}</button>`).join("");
+}
+function flipMemory(i){
+ if(memoryOpen.includes(i)||memoryMatches.includes(i)||memoryOpen.length>=2)return;
+ memoryOpen.push(i);drawMemory();
+ if(memoryOpen.length===2){
+  let [a,b]=memoryOpen;
+  if(memoryCards[a]===memoryCards[b]){memoryMatches.push(a,b);memoryOpen=[];if(memoryMatches.length===12)toast("Hebat! Semua pasangan ditemukan.");drawMemory();}
+  else setTimeout(()=>{memoryOpen=[];drawMemory()},700);
+ }
+}
+function startMathGame(){
+ clearInterval(mathTimer);
+ let time=30,score=0;
+ function next(){
+  let a=Math.floor(Math.random()*20)+1,b=Math.floor(Math.random()*20)+1;
+  mathAnswer=a+b;
+  document.getElementById("mathGame").innerHTML=`<div class="score">${time}s</div><h3>${a} + ${b} = ?</h3><input id="mathInput" type="number" placeholder="Jawaban"><button class="btn full" onclick="checkMath()">Jawab</button><p class="small">Skor: ${score}</p>`;
+ }
+ window.checkMath=function(){
+  let val=+document.getElementById("mathInput").value;
+  if(val===mathAnswer)score++;else toast("Belum tepat.");
+  next();
+ };
+ next();
+ mathTimer=setInterval(()=>{
+  time--;
+  if(time<=0){clearInterval(mathTimer);document.getElementById("mathGame").innerHTML=`<h3>Waktu habis!</h3><div class="score">${score}</div><p>Jawaban benar</p>`}
+  else{let el=document.querySelector("#mathGame .score");if(el)el.textContent=time+"s"}
+ },1000);
+}
+function toast(t){
+ let el=document.getElementById("toast");el.textContent=t;el.style.display="block";
+ clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.style.display="none",3000);
+}
+authUI();
+initFirebase();
+</script>
+</body>
+                                                                        </html>
